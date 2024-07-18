@@ -2,26 +2,7 @@
 name = "application"
 version = "0.1.0"
 edition = "2021"
-license = "AGPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[[test]]
-name = "main"
 
 [dependencies]
-mockall = "0.12"
-async-trait = "0.1"
-
-thiserror = { workspace = true }
-anyhow =  { workspace = true }
-
-kernel = { path = "../kernel", features = ["re-export", "mock"] }
-
-[dev-dependencies]
-tokio = { version = "1", features = ["full"] }
-application = { path = ".", features = ["mock", "integration"] }
-kernel = { path = "../kernel", features = ["re-export", "mock", "interfaces", "prelude"] }
-
-[features]
-mock = []
-integration = []
