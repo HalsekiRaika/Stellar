@@ -12,5 +12,7 @@ pub enum KernelError {
     #[error("this value not found. {val}")]
     NotFound {
         val: String
-    }
+    },
+    #[error("An error occurred while processing the value.")]
+    Processing
 }
