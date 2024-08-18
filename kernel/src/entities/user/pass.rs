@@ -23,13 +23,13 @@ impl Password {
         Ok(Self(hash))
     }
     
-    pub fn verify(&self, pass: impl Into<String>) -> Result<(), Report<KernelError>> {
+    pub fn verify(&self, pass: impl AsRef<str>) -> Result<(), Report<KernelError>> {
         let hash = PasswordHash::new(&self.0)
             .change_context_lazy(|| KernelError::Validation {
                 entity: "Pass",
                 reason: "incorrect format.",
             })?;
-        HASHER.verify_password(pass.into().as_bytes(), &hash)
+        HASHER.verify_password(pass.as_ref().as_bytes(), &hash)
             .change_context_lazy(|| KernelError::Validation {
                 entity: "Pass",
                 reason: "password does not match.",

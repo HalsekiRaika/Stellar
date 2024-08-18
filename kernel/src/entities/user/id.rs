@@ -1,3 +1,5 @@
+use lutetium::identifier::{ActorId, IntoActorId, ToActorId};
+use lutetium::persistence::identifier::{PersistenceId, ToPersistenceId};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,6 +15,18 @@ impl AsRef<Uuid> for UserId {
 impl From<UserId> for Uuid {
     fn from(value: UserId) -> Self {
         value.0
+    }
+}
+
+impl IntoActorId for UserId {
+    fn into_actor_id(self) -> ActorId {
+        self.0.to_actor_id()
+    }
+}
+
+impl ToPersistenceId for UserId {
+    fn to_persistence_id(&self) -> PersistenceId {
+        self.0.to_persistence_id()
     }
 }
 
