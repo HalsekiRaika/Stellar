@@ -9,4 +9,4 @@ resolver = "2"
 
 
 [workspace.dependencies]
-lutetium = { git = "https://github.com/HalsekiRaika/lutetium", features = ["persistence"] }
+lutetium = { version = "0.2.0", features = ["persistence"] }
