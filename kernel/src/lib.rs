@@ -1,4 +1,6 @@
 pub mod entities;
 pub mod errors;
-mod command;
-mod event;
+pub mod command;
+pub mod event;
+pub mod services;
+

@@ -1,9 +1,9 @@
-use lutetium::identifier::{ActorId, IntoActorId, ToActorId};
-use lutetium::persistence::identifier::{PersistenceId, ToPersistenceId};
+use std::fmt::{Display, Formatter};
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Deserialize, Serialize)]
 pub struct UserId(Uuid);
 
 impl AsRef<Uuid> for UserId {
@@ -18,15 +18,9 @@ impl From<UserId> for Uuid {
     }
 }
 
-impl IntoActorId for UserId {
-    fn into_actor_id(self) -> ActorId {
-        self.0.to_actor_id()
-    }
-}
-
-impl ToPersistenceId for UserId {
-    fn to_persistence_id(&self) -> PersistenceId {
-        self.0.to_persistence_id()
+impl Display for UserId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "UserId({})", self.0)
     }
 }
 

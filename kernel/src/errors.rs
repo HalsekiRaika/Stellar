@@ -13,6 +13,16 @@ pub enum KernelError {
     NotFound {
         val: String
     },
+    #[error("")]
+    Unavailable {
+        
+    },
     #[error("An error occurred while processing the value.")]
-    Processing
+    Processing,
+    #[error("Wrong data was used. {reason}")]
+    Invalid {
+        reason: &'static str
+    },
+    #[error("An error occurred in an external library unrelated to the kernel.")]
+    External
 }
