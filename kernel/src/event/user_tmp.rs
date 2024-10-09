@@ -1,8 +1,8 @@
-use crate::entities::FactorCode;
+use crate::entities::{FactorCode, UserId};
 
 #[derive(Debug, Clone)]
 pub enum TemporalUserEvent {
-    AddressRegistered { mfa: FactorCode },
+    AcceptedAddress { code: FactorCode },
     Verified2FA,
-    Registration,
+    Registration { user_id: UserId },
 }

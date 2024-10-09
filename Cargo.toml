@@ -7,6 +7,15 @@ members = [
 ]
 resolver = "2"
 
+[workspace.package]
+repository = "https://github.com/ShuttlePub/Stellar"
+license = "AGPL-3"
+publish = false
+
 
 [workspace.dependencies]
-lutetium = { version = "0.5.3", features = ["persistence"] }
+thiserror = "^1"
+error-stack = "=0.5"
+async-trait = "^0.1"
+
+lutetium = { version = "0.5.5", features = ["persistence"] }

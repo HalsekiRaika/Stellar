@@ -2,12 +2,13 @@
 name = "application"
 version = "0.1.0"
 edition = "2021"
-
+publish = { workspace = true }
+license = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.83"
-thiserror = "^1"
-error-stack = "^0.5"
+thiserror = { workspace = true }
+error-stack = { workspace = true }
+async-trait = { workspace = true }
 
 kernel = { path = "../kernel" }

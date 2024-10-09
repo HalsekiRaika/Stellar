@@ -14,14 +14,14 @@ pub use self::{
 
 use destructure::{Destructure, Mutation};
 use error_stack::{Report, ResultExt};
-use lutetium::actor::Handler;
+use lutetium::actor::{FromMessage, Handler};
 use lutetium::persistence::actor::PersistenceActor;
 use lutetium::persistence::errors::{DeserializeError, SerializeError};
 use lutetium::persistence::identifier::{PersistenceId, ToPersistenceId, Version};
 use lutetium::persistence::{PersistContext, RecoverJournal, RecoverSnapShot, SnapShot};
 use lutetium::persistence::mapping::{RecoverMapping, RecoveryMapping};
 use serde::{Deserialize, Serialize};
-use crate::command::UserCommand;
+use crate::command::{UserCommand, UserRegistrationCommand};
 use crate::errors::KernelError;
 use crate::event::UserEvent;
 
@@ -97,6 +97,7 @@ impl RecoverSnapShot for User {
 
 #[async_trait::async_trait]
 impl RecoverJournal<UserEvent> for User {
+    #[allow(irrefutable_let_patterns)]
     async fn recover_journal(this: &mut Option<Self>, event: UserEvent, _ctx: &mut PersistContext) {
         match this {
             None => {
@@ -118,27 +119,37 @@ impl RecoveryMapping for User {
     }
 }
 
+
+#[async_trait::async_trait]
+impl FromMessage<UserRegistrationCommand> for User {
+    type Identifier = UserId;
+    type Rejection = Report<KernelError>;
+    async fn once(msg: UserRegistrationCommand, ctx: &mut PersistContext) -> Result<(Self::Identifier, Self), Self::Rejection> {
+        let user = User::new(msg.id, msg.name, msg.pass);
+        
+        user.snapshot(&user, ctx).await
+            .change_context_lazy(|| KernelError::External)?;
+
+        let event = UserEvent::Registered {
+            id: user.id,
+            name: user.name.clone(),
+            pass: user.pass.clone(),
+        };
+
+        user.persist(&event, ctx).await
+            .change_context_lazy(|| KernelError::External)?;
+        
+        Ok((user.id, user))
+    }
+}
+
+
 #[async_trait::async_trait]
 impl Handler<UserCommand> for User {
     type Accept = UserEvent;
     type Rejection = Report<KernelError>;
 
-    async fn call(&mut self, msg: UserCommand, ctx: &mut PersistContext) -> Result<Self::Accept, Self::Rejection> {
-        let ev = match msg {
-            UserCommand::Register { .. } => {
-                self.snapshot(self, ctx).await
-                    .change_context_lazy(|| KernelError::External)?;
-                UserEvent::Registered {
-                    id: self.id,
-                    name: self.name.clone(),
-                    pass: self.pass.clone(),
-                }
-            }
-        };
-        
-        self.persist(&ev, ctx).await
-            .change_context_lazy(|| KernelError::External)?;
-        
-        Ok(ev)
+    async fn call(&mut self, _msg: UserCommand, _ctx: &mut PersistContext) -> Result<Self::Accept, Self::Rejection> {
+        todo!()
     }
 }

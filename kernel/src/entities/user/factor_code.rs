@@ -25,3 +25,15 @@ impl FactorCode {
         Ok(())
     }
 }
+
+impl AsRef<str> for FactorCode {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl From<FactorCode> for String {
+    fn from(value: FactorCode) -> Self {
+        value.0
+    }
+}
