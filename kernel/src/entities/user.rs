@@ -29,19 +29,22 @@ use crate::event::UserEvent;
 pub struct User {
     id: UserId,
     name: UserName,
-    pass: Password
+    pass: Password,
+    address: Address,
 }
 
 impl User {
     pub fn new(
         id: UserId,
         name: UserName,
-        pass: Password
+        pass: Password,
+        address: Address
     ) -> User {
         Self {
             id,
             name,
-            pass
+            pass,
+            address,
         }
     }
 }
@@ -57,6 +60,10 @@ impl User {
     
     pub fn pass(&self) -> &Password {
         &self.pass
+    }
+    
+    pub fn address(&self) -> &Address { 
+        &self.address
     }
 }
 
@@ -85,7 +92,7 @@ impl RecoverSnapShot for User {
     async fn recover_snapshot(this: &mut Option<Self>, snapshot: Self, _ctx: &mut PersistContext) {
         match this {
             None => {
-                *this = Some(Self::new(snapshot.id, snapshot.name, snapshot.pass));
+                *this = Some(Self::new(snapshot.id, snapshot.name, snapshot.pass, snapshot.address));
             }
             Some(this) => {
                 this.name = snapshot.name;
@@ -101,8 +108,8 @@ impl RecoverJournal<UserEvent> for User {
     async fn recover_journal(this: &mut Option<Self>, event: UserEvent, _ctx: &mut PersistContext) {
         match this {
             None => {
-                if let UserEvent::Registered { id, name, pass } = event {
-                    *this = Some(Self::new(id, name, pass))
+                if let UserEvent::Registered { id, name, pass, address } = event {
+                    *this = Some(Self::new(id, name, pass, address))
                 }
             }
             Some(_this) => {
@@ -125,19 +132,20 @@ impl FromMessage<UserRegistrationCommand> for User {
     type Identifier = UserId;
     type Rejection = Report<KernelError>;
     async fn once(msg: UserRegistrationCommand, ctx: &mut PersistContext) -> Result<(Self::Identifier, Self), Self::Rejection> {
-        let user = User::new(msg.id, msg.name, msg.pass);
+        let user = User::new(msg.id, msg.name, msg.pass, msg.address);
         
         user.snapshot(&user, ctx).await
-            .change_context_lazy(|| KernelError::External)?;
+            .change_context_lazy(|| KernelError::External { crate_name: "lutetium" })?;
 
         let event = UserEvent::Registered {
             id: user.id,
             name: user.name.clone(),
             pass: user.pass.clone(),
+            address: user.address.clone(),
         };
 
         user.persist(&event, ctx).await
-            .change_context_lazy(|| KernelError::External)?;
+            .change_context_lazy(|| KernelError::External { crate_name: "lutetium" })?;
         
         Ok((user.id, user))
     }

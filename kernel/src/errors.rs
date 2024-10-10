@@ -23,6 +23,8 @@ pub enum KernelError {
     Invalid {
         reason: &'static str
     },
-    #[error("An error occurred in an external library unrelated to the kernel.")]
-    External
+    #[error("An error occurred in an external library:{crate_name} unrelated to the kernel.")]
+    External {
+        crate_name: &'static str,
+    }
 }

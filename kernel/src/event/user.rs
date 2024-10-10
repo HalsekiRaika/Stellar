@@ -1,11 +1,11 @@
 use lutetium::persistence::errors::{DeserializeError, SerializeError};
 use lutetium::persistence::Event;
 use serde::{Deserialize, Serialize};
-use crate::entities::{Password, UserId, UserName};
+use crate::entities::{Address, Password, UserId, UserName};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum UserEvent {
-    Registered { id: UserId, name: UserName, pass: Password },
+    Registered { id: UserId, name: UserName, pass: Password, address: Address },
 }
 
 impl Event for UserEvent {

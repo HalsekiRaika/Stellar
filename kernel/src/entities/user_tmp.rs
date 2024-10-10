@@ -46,7 +46,7 @@ impl Handler<TemporalUserCommand> for TemporalUser {
     type Accept = TemporalUserEvent;
     type Rejection = Report<KernelError>;
 
-    #[tracing::instrument(skip_all, name = "TemporalUser")]
+    #[tracing::instrument(skip_all, name = "TemporalUser", fields(id = %self.id))]
     async fn call(&mut self, msg: TemporalUserCommand, ctx: &mut Context) -> Result<Self::Accept, Self::Rejection> {
         let ev = match msg {
             TemporalUserCommand::EnterAddress { address} => {
@@ -85,7 +85,7 @@ impl Handler<TemporalUserCommand> for TemporalUser {
                 TemporalUserEvent::Verified2FA
             }
             TemporalUserCommand::BasicInfoRegistration { name, pass } => {
-                let TemporalUserFlowState::MFAChecked { .. } = &self.state else {
+                let TemporalUserFlowState::MFAChecked { verified } = &self.state else {
                     return Err(Report::new(KernelError::Unavailable {
                         
                     }))
@@ -95,14 +95,19 @@ impl Handler<TemporalUserCommand> for TemporalUser {
                 let name = UserName::new(name);
                 let pass = Password::new(pass)?;
                 
-                let cmd = UserRegistrationCommand { id, name, pass, };
+                let cmd = UserRegistrationCommand { 
+                    id, 
+                    name, 
+                    pass, 
+                    address: verified.to_owned() 
+                };
 
                 ctx.shutdown().await;
                 
                 let _ = ctx.system()
                     .spawn_from::<User, _>(cmd)
                     .await?
-                    .change_context_lazy(|| KernelError::External)?;
+                    .change_context_lazy(|| KernelError::External { crate_name: "lutetium" })?;
 
                 tracing::debug!("user registered");
                 
@@ -116,6 +121,7 @@ impl Handler<TemporalUserCommand> for TemporalUser {
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
     use error_stack::{Report, ResultExt};
     use lutetium::actor::refs::RegularAction;
     use lutetium::system::{ActorSystem, LutetiumActorSystem};
@@ -131,7 +137,7 @@ mod test {
     async fn actor_test() -> Result<(), Report<KernelError>> {
         tracing_subscriber::registry()
             .with(tracing_subscriber::fmt::layer()
-                      .with_filter(tracing_subscriber::EnvFilter::new("kernel=trace,lutetium=trace"))
+                      .with_filter(tracing_subscriber::EnvFilter::new("kernel=trace,lutetium=debug"))
                       .with_filter(tracing_subscriber::filter::LevelFilter::TRACE),
             )
             .init();
@@ -139,30 +145,32 @@ mod test {
         let system = ActorSystem::builder().build();
         let id = UserId::default();
         let refs = system.try_spawn(id, TemporalUserSignup).await?
-            .change_context_lazy(|| KernelError::External)?;
+            .change_context_lazy(|| KernelError::External { crate_name: "lutetium" })?;
 
         let ev = refs.ask(TemporalUserCommand::EnterAddress { address: "test@example.com".to_string() }).await
-            .change_context_lazy(|| KernelError::External)??;
+            .change_context_lazy(|| KernelError::External { crate_name: "lutetium" })??;
         
         let TemporalUserEvent::AcceptedAddress { code } = ev else {
             return Err(Report::new(KernelError::Invalid { reason: "decline address" }))
         };
         
         let ev = refs.ask(TemporalUserCommand::Verification2FA { code: code.into() }).await
-            .change_context_lazy(|| KernelError::External)??;
+            .change_context_lazy(|| KernelError::External { crate_name: "lutetium" })??;
         
         let TemporalUserEvent::Verified2FA = ev else {
             return Err(Report::new(KernelError::Invalid { reason: "Failed 2FA" }))
         };
 
         let ev = refs.ask(TemporalUserCommand::BasicInfoRegistration { name: "test-user".to_string(), pass: "test123".to_string() }).await
-            .change_context_lazy(|| KernelError::External)??;
+            .change_context_lazy(|| KernelError::External { crate_name: "lutetium" })??;
         
         let TemporalUserEvent::Registration { user_id } = ev else {
             return Err(Report::new(KernelError::Invalid { reason: "Failed registration" }))
         };
         
         println!("Generated {}", user_id);
+        
+        tokio::time::sleep(Duration::from_millis(1000)).await;
         
         Ok(())
     }
